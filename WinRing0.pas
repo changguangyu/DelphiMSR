@@ -33,7 +33,15 @@ type
     TIsMsr = function: BOOL; stdcall;
     TRdmsr = function(index: DWORD; var eax: DWORD; var edx: DWORD)
       : BOOL; stdcall;
+    TRdmsrTx = function(index: DWORD; var eax: DWORD; var edx: DWORD;
+      threadAffinityMask: DWORD_PTR): BOOL; stdcall;
+    TRdmsrPx = function(index: DWORD; var eax: DWORD; var edx: DWORD;
+      processAffinityMask: DWORD_PTR): BOOL; stdcall;
     TWrmsr = function(index: DWORD; eax: DWORD; edx: DWORD): BOOL; stdcall;
+    TWrmsrTx = function(index: DWORD; eax: DWORD; edx: DWORD;
+      threadAffinityMask: DWORD_PTR): BOOL; stdcall;
+    TWrmsrPx = function(index: DWORD; eax: DWORD; edx: DWORD;
+      processAffinityMask: DWORD_PTR): BOOL; stdcall;
   private
     FModule: THandle;
     FStatus: TStatus;
@@ -46,6 +54,10 @@ type
     FIsMsr: TIsMsr;
     FRdmsr: TRdmsr;
     FWrmsr: TWrmsr;
+    FRdmsrPx: TRdmsrPx;
+    FRdmsrTx: TRdmsrTx;
+    FWrmsrPx: TWrmsrPx;
+    FWrmsrTx: TWrmsrTx;
   public
     // -----------------------------------------------------------------------------
     // DLL Information
@@ -61,7 +73,11 @@ type
     // -----------------------------------------------------------------------------
     property IsMsr: TIsMsr read FIsMsr;
     property Rdmsr: TRdmsr read FRdmsr;
+    property RdmsrTx: TRdmsrTx read FRdmsrTx;
+    property RdmsrPx: TRdmsrPx read FRdmsrPx;
     property Wrmsr: TWrmsr read FWrmsr;
+    property WrmsrTx: TWrmsrTx read FWrmsrTx;
+    property WrmsrPx: TWrmsrPx read FWrmsrPx;
     constructor Create;
     destructor Destroy; override;
     function GetStatus: TStatus;
@@ -99,18 +115,24 @@ begin
 
     FIsMsr := GetProcAddress(FModule, 'IsMsr');
     FRdmsr := GetProcAddress(FModule, 'Rdmsr');
+    FRdmsrPx := GetProcAddress(FModule, 'RdmsrPx');
+    FRdmsrTx := GetProcAddress(FModule, 'RdmsrTx');
     FWrmsr := GetProcAddress(FModule, 'Wrmsr');
+    FWrmsrPx := GetProcAddress(FModule, 'WrmsrPx');
+    FWrmsrTx := GetProcAddress(FModule, 'WrmsrTx');
 
     // Check Functions
     if (not(Assigned(FGetDllStatus) and Assigned(FGetDllVersion) and
       Assigned(FGetDriverVersion) and Assigned(FGetDriverType) and
       Assigned(FInitializeOls) and Assigned(FDeinitializeOls) and
-      Assigned(FIsMsr) and Assigned(FRdmsr) and Assigned(FWrmsr))) then
+      Assigned(FIsMsr) and Assigned(FRdmsr) and Assigned(FRdmsrPx) and
+      Assigned(FRdmsrTx) and Assigned(FWrmsr) and Assigned(FWrmsrPx) and
+      Assigned(FWrmsrTx))) then
     begin
       FStatus := TStatus.DLL_INCORRECT_VERSION;
     end;
 
-    if FInitializeOls() then
+    if not FInitializeOls() then
     begin
       FStatus := TStatus.DLL_INITIALIZE_ERROR;
     end;
